@@ -1,0 +1,69 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: prometheus-scaledobject
+spec:
+  scaleTargetRef:
+    name: test-app
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 10
+  advanced:
+    restoreToOriginalReplicaCount: false
+    horizontalPodAutoscalerConfig:
+      name: keda-hpa-prometheus-scaledobject
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0 # Perform a scale-out when needed
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15 # Up to one time the current number of Pods can be added every 15 seconds.
+          - type: Pods
+            value: 4
+            periodSeconds: 15 # Up to four Pods can be added every 15 seconds.
+          selectPolicy: Max # Use the larger value of the two calculated based on the above two scale-out policies
+        scaleDown:
+          stabilizationWindowSeconds: 30
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 15
+  cooldownPeriod:  10
+  fallback:                                          
+    failureThreshold: 3                              
+    replicas: 2 
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: https://thanos-querier.openshift-monitoring.svc.cluster.local:9092
+      namespace: demo
+      metricName: http_requests_total
+      threshold: '1' # 1 per second
+      query: sum(rate(http_requests_total{job="test-app"}[1m]))
+      authModes: "bearer"
+    authenticationRef:
+      name: keda-trigger-auth-prometheus
+  - type: cron
+    metadata:
+      # Required
+      timezone: Australia/Melbourne  # The acceptable values would be a value from the IANA Time Zone Database.
+      start: 15 15 * * *        # At 6:00 AM
+      end: 20 15 * * *         # At 8:00 PM
+      desiredReplicas: "10"
+
+---
+
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-prometheus
+spec:
+  secretTargetRef:
+  - parameter: bearerToken
+    name: my-sa-token       # update this
+    key: token
+  - parameter: ca
+    name: my-sa-token       # update this
+    key: ca.crt
+

@@ -1,0 +1,22 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-scaledobject
+  namespace: demo
+  labels:
+    deploymentName: listener
+spec:
+  scaleTargetRef:
+    name: listener
+  pollingInterval: 5
+  cooldownPeriod: 10
+  minReplicaCount: 0
+  maxReplicaCount: 10  # Max can go upto num of partitions you have in the topic
+  triggers:
+    - type: kafka
+      metadata:
+        consumerGroup: my-kafka-consumer-group
+        bootstrapServers: my-cluster-kafka-bootstrap.demo.svc:9092
+        topic: my-topic
+        lagThreshold: "2"
+        offsetRestPolicy: latest
