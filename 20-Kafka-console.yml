@@ -1,0 +1,23 @@
+apiVersion: console.streamshub.github.com/v1alpha1
+kind: Console
+metadata:
+  name: example-console
+  namespace: demo
+spec:
+  hostname: example-console.apps.cluster-52mhf.dynamic.redhatworkshops.io
+  kafkaClusters:
+    - adminProperties:
+        values: []
+        valuesFrom: []
+      consumerProperties:
+        values: []
+        valuesFrom: []
+      listener: plain
+      name: my-cluster
+      namespace: demo
+      producerProperties:
+        values: []
+        valuesFrom: []
+      properties:
+        values: []
+        valuesFrom: []
